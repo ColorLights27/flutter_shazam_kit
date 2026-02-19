@@ -30,6 +30,7 @@ public class SwiftFlutterShazamKitPlugin: NSObject, FlutterPlugin {
             stopListening()
             result(nil)
         case "endSession":
+            stopListening()
             session = nil
             result(nil)
         default:
@@ -59,16 +60,17 @@ extension SwiftFlutterShazamKitPlugin{
             result(nil)
             return
         }
-        guard !audioEngine.isRunning else {
-            callbackChannel?.invokeMethod("didHasError", arguments: "Audio engine is currently running, please stop the audio engine first and then try again")
-            result(nil)
-            return
-        }
         guard !isStarting else {
             result(nil)
             return
         }
         isStarting = true
+
+        // Always clean up previous state to prevent installTap crash
+        if audioEngine.isRunning {
+            audioEngine.inputNode.removeTap(onBus: 0)
+            audioEngine.stop()
+        }
 
         let audioSession = AVAudioSession.sharedInstance()
 
